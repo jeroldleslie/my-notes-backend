@@ -31,3 +31,5 @@ func pageLimitQ(query *orm.Query, page, pageLimit int) *orm.Query {
 func (m *DBMapper) InitCache() {
 	m.Cache = cache.New(5*time.Minute, 10*time.Minute)
 }
+
+

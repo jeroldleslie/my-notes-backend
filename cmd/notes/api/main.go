@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -62,14 +63,81 @@ func serve(a *APIHandler) {
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.GET("/v1/ping", ping)
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	}))
+	e.GET("/api/ping", ping)
+	e.POST("/api/signup", a.handleSignup)
+	e.POST("/api/signin", a.handleSignin)
 	e.Logger.Fatal(e.Start(":" + port))
 }
 
 func ping(c echo.Context) error {
+	data := "{ \"message\": \"hello angular I am from API. Hello leslie too\"}"
 	response := utils.Response{
 		StatusCode: http.StatusOK,
-		Data:       http.StatusText(http.StatusOK),
+		Data:       data, //http.StatusText(http.StatusOK),
+	}
+	return response.Send(&c)
+}
+
+func (a *APIHandler) handleSignup(c echo.Context) error {
+	//data := "{ \"message\": \"hello angular I am from API. Hello leslie too\"}"
+
+	user := api.User{}
+	err := c.Bind(&user)
+	if err == nil {
+		fmt.Println(">>>>>>")
+		fmt.Println(user.Password)
+		err = a.API.Signup(&user)
+	}
+
+	user.Password = ""
+	response := utils.Response{
+		StatusCode: errorToHTTPStatusCode(err),
+		Data:       user,
+		Error:      err,
+	}
+	return response.Send(&c)
+}
+
+func (a *APIHandler) handleSignin(c echo.Context) error {
+	//data := "{ \"message\": \"hello angular I am from API. Hello leslie too\"}"
+
+	cred := api.User{}
+	err := c.Bind(&cred)
+	if err != nil {
+		response := utils.Response{
+			StatusCode: errorToHTTPStatusCode(err),
+			Data:       nil,
+			Error:      err,
+		}
+		return response.Send(&c)
+	}
+
+	b, _ := json.Marshal(cred)
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+
+	loginResponse, errf := a.API.Signin(&cred)
+
+	if errf != nil {
+		response := utils.Response{
+			StatusCode: errorToHTTPStatusCode(errf),
+			Data:       nil,
+			Error:      errf,
+		}
+		return response.Send(&c)
+	}
+	response := utils.Response{
+		StatusCode: http.StatusOK,
+		Data:       loginResponse,
+		Error:      nil,
 	}
 	return response.Send(&c)
 }

@@ -16,3 +16,11 @@ type API struct {
 	DBMapper *DBMapper
 	/* Redis    *redis.Client */
 }
+
+func (api *API) Signup(user *User) error {
+	return api.DBMapper.Signup(user)
+}
+
+func (api *API) Signin(cred *User) (*LoginResponse, error) {
+	return api.DBMapper.Signin(cred)
+}
