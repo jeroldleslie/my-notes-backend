@@ -17,10 +17,22 @@ type API struct {
 	/* Redis    *redis.Client */
 }
 
-func (api *API) Signup(user *User) error {
+func (api *API) Signup(user *User) (*User, error) {
 	return api.DBMapper.Signup(user)
 }
 
 func (api *API) Signin(cred *User) (*LoginResponse, error) {
 	return api.DBMapper.Signin(cred)
+}
+
+func (api *API) CreateNote(note *Note) (*Note, error) {
+	return api.DBMapper.SaveNote(note)
+}
+
+func (api *API) GetUserNotes(userID int) (*[]Note, error) {
+	return api.DBMapper.GetUserNotes(userID)
+}
+
+func (api *API) DeleteNotes(id int) error {
+	return api.DBMapper.DeleteNotes(id)
 }

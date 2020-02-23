@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/jeroldleslie/my-notes-backend/internal/api"
 	"github.com/jeroldleslie/my-notes-backend/internal/log_conf"
@@ -70,6 +71,11 @@ func serve(a *APIHandler) {
 	e.GET("/api/ping", ping)
 	e.POST("/api/signup", a.handleSignup)
 	e.POST("/api/signin", a.handleSignin)
+	g := e.Group("/api/notes")
+
+	g.POST("", a.handleCreateNote)
+	g.GET("/user_notes/:user_id", a.handleGetNote)
+	g.DELETE("/:id", a.handleDeleteNote)
 	e.Logger.Fatal(e.Start(":" + port))
 }
 
@@ -86,17 +92,18 @@ func (a *APIHandler) handleSignup(c echo.Context) error {
 	//data := "{ \"message\": \"hello angular I am from API. Hello leslie too\"}"
 
 	user := api.User{}
+	var userResult *api.User
 	err := c.Bind(&user)
 	if err == nil {
 		fmt.Println(">>>>>>")
 		fmt.Println(user.Password)
-		err = a.API.Signup(&user)
+		userResult, err = a.API.Signup(&user)
 	}
 
 	user.Password = ""
 	response := utils.Response{
 		StatusCode: errorToHTTPStatusCode(err),
-		Data:       user,
+		Data:       userResult,
 		Error:      err,
 	}
 	return response.Send(&c)
@@ -138,6 +145,65 @@ func (a *APIHandler) handleSignin(c echo.Context) error {
 		StatusCode: http.StatusOK,
 		Data:       loginResponse,
 		Error:      nil,
+	}
+	return response.Send(&c)
+}
+
+func (a *APIHandler) handleCreateNote(c echo.Context) error {
+
+	note := api.Note{}
+	err := c.Bind(&note)
+	if err != nil {
+		response := utils.Response{
+			StatusCode: errorToHTTPStatusCode(err),
+			Data:       nil,
+			Error:      err,
+		}
+		return response.Send(&c)
+	}
+
+	b, _ := json.Marshal(note)
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+	fmt.Println(string(b))
+
+	savedNote, errf := a.API.CreateNote(&note)
+
+	response := utils.Response{
+		StatusCode: errorToHTTPStatusCode(errf),
+		Data:       savedNote,
+		Error:      errf,
+	}
+
+	return response.Send(&c)
+}
+
+func (a *APIHandler) handleGetNote(c echo.Context) error {
+	userID, _ := strconv.Atoi(c.Param("user_id"))
+	notes, err := a.API.GetUserNotes(userID)
+
+	response := utils.Response{
+		StatusCode: errorToHTTPStatusCode(err),
+		Data:       notes,
+		Error:      err,
+	}
+	return response.Send(&c)
+}
+
+func (a *APIHandler) handleDeleteNote(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	deleteResponse := "{\"status\":\"SUCCESS\"}"
+	err := a.API.DeleteNotes(id)
+	if err != nil {
+		deleteResponse = "{\"status\":\"FAILURE\"}"
+	}
+	response := utils.Response{
+		StatusCode: errorToHTTPStatusCode(err),
+		Data:       deleteResponse,
+		Error:      err,
 	}
 	return response.Send(&c)
 }
