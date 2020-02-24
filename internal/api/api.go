@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	//"mime/multipart"
 )
 
 //TODO reorganize this errors
@@ -35,4 +37,8 @@ func (api *API) GetUserNotes(userID int) (*[]Note, error) {
 
 func (api *API) DeleteNotes(id int) error {
 	return api.DBMapper.DeleteNotes(id)
+}
+
+func (api *API) Upload(noteID int64, fileName string, buffer *bytes.Buffer) error {
+	return api.DBMapper.SaveFile(noteID, fileName, buffer)
 }

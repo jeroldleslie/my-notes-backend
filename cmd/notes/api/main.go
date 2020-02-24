@@ -1,17 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
+
+	//"os"
 	"strconv"
 
 	"github.com/jeroldleslie/my-notes-backend/internal/api"
-	"github.com/jeroldleslie/my-notes-backend/internal/log_conf"
+	//"github.com/jeroldleslie/my-notes-backend/internal/log_conf"
 	"github.com/jeroldleslie/my-notes-backend/internal/utils"
-	"github.com/jeroldleslie/my-notes-backend/internal/utils/db_logger"
-	"github.com/jeroldleslie/my-notes-backend/internal/utils/stage"
+
+	//"github.com/jeroldleslie/my-notes-backend/internal/utils/db_logger"
+	//"github.com/jeroldleslie/my-notes-backend/internal/utils/stage"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/sirupsen/logrus"
@@ -28,19 +32,19 @@ const (
 )
 
 func main() {
-	if !stage.IsProd() {
+	/* if !stage.IsProd() {
 		if err := log_conf.AllLevelFiles(".", "my-notes-api", logrus.TraceLevel); err != nil {
 			logrus.Error(err)
 			os.Exit(1)
 		}
-	}
+	} */
 
 	db, err := utils.ConnectToPostgres("")
 	if err != nil {
 		fmt.Errorf("%+v", err)
 		panic(err)
 	}
-	db_logger.AddDbLogger(db, true)
+	//db_logger.AddDbLogger(db, true)
 
 	mapper := api.DBMapper{
 		DB: db,
@@ -76,6 +80,41 @@ func serve(a *APIHandler) {
 	g.POST("", a.handleCreateNote)
 	g.GET("/user_notes/:user_id", a.handleGetNote)
 	g.DELETE("/:id", a.handleDeleteNote)
+	g.POST("/file", a.handleUpload)
+	e.GET("/file/:note_id", func(c echo.Context) error {
+		note_id, _ := strconv.Atoi(c.Param("note_id"))
+		fmt.Println("inline")
+		fmt.Println("inline")
+		fmt.Println("inline")
+		fmt.Println("inline")
+		fmt.Println("inline")
+		fmt.Println("inline")
+		fmt.Println("inline")
+		fmt.Println("inline")
+
+		//c.Response().Header().Set(echo.HeaderContentType, echo.MIMEOctetStream)
+		//c.Response().WriteHeader(http.StatusOK)
+
+		file := &api.File{}
+
+		a.API.DBMapper.DB.Model(file).Where("note_id = ?", note_id).Select()
+
+		fmt.Println(file.FileName)
+		fmt.Println(file.FileName)
+		fmt.Println(file.FileName)
+		fmt.Println(file.FileName)
+		fmt.Println(file.FileName)
+		fmt.Println(len(file.Content))
+
+		c.Response().Header().Set("Content-Type", file.ContentType)
+		c.Response().Header().Set("Content-Length", strconv.Itoa(len(file.Content)))
+
+		return c.Blob(http.StatusOK, file.ContentType, file.Content)
+		//c.JSONBlob(res.StatusCode, []byte(res.Data.(string)))
+		//return c.JSONBlob(http.StatusOK, []byte("hello world"))
+		//return c.Inline("inline.txt", "inline.txt")
+	})
+
 	e.Logger.Fatal(e.Start(":" + port))
 }
 
@@ -203,6 +242,49 @@ func (a *APIHandler) handleDeleteNote(c echo.Context) error {
 	response := utils.Response{
 		StatusCode: errorToHTTPStatusCode(err),
 		Data:       deleteResponse,
+		Error:      err,
+	}
+	return response.Send(&c)
+}
+
+func (a *APIHandler) handleUpload(c echo.Context) error {
+	//noteID, _ := strconv.Atoi(c.Param("note_id"))
+
+	//-----------
+	// Read file
+	//-----------
+
+	// Source
+	noteID, _ := strconv.Atoi(c.FormValue("note_id"))
+	file, err := c.FormFile("file")
+	if err != nil {
+		return err
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	bodyBuf := &bytes.Buffer{}
+
+	//iocopy
+	_, err = io.Copy(bodyBuf, src)
+	if err != nil {
+		return err
+	}
+
+	contentType := http.DetectContentType(bodyBuf.Bytes())
+	fmt.Println(contentType)
+	fmt.Println(file.Size)
+	fmt.Println(len(bodyBuf.Bytes()))
+
+	err = a.API.Upload(int64(noteID), file.Filename, bodyBuf)
+
+	response := utils.Response{
+		StatusCode: errorToHTTPStatusCode(err),
+		Data:       noteID,
 		Error:      err,
 	}
 	return response.Send(&c)
