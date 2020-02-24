@@ -81,38 +81,17 @@ func serve(a *APIHandler) {
 	g.GET("/user_notes/:user_id", a.handleGetNote)
 	g.DELETE("/:id", a.handleDeleteNote)
 	g.POST("/file", a.handleUpload)
-	e.GET("/file/:note_id", func(c echo.Context) error {
-		note_id, _ := strconv.Atoi(c.Param("note_id"))
-		fmt.Println("inline")
-		fmt.Println("inline")
-		fmt.Println("inline")
-		fmt.Println("inline")
-		fmt.Println("inline")
-		fmt.Println("inline")
-		fmt.Println("inline")
-		fmt.Println("inline")
-
-		//c.Response().Header().Set(echo.HeaderContentType, echo.MIMEOctetStream)
-		//c.Response().WriteHeader(http.StatusOK)
+	g.GET("/file/:id", func(c echo.Context) error {
+		id, _ := strconv.Atoi(c.Param("id"))
 
 		file := &api.File{}
-
-		a.API.DBMapper.DB.Model(file).Where("note_id = ?", note_id).Select()
-
-		fmt.Println(file.FileName)
-		fmt.Println(file.FileName)
-		fmt.Println(file.FileName)
-		fmt.Println(file.FileName)
-		fmt.Println(file.FileName)
-		fmt.Println(len(file.Content))
+		a.API.DBMapper.DB.Model(file).Where("id = ?", id).Select()
 
 		c.Response().Header().Set("Content-Type", file.ContentType)
 		c.Response().Header().Set("Content-Length", strconv.Itoa(len(file.Content)))
 
 		return c.Blob(http.StatusOK, file.ContentType, file.Content)
-		//c.JSONBlob(res.StatusCode, []byte(res.Data.(string)))
-		//return c.JSONBlob(http.StatusOK, []byte("hello world"))
-		//return c.Inline("inline.txt", "inline.txt")
+
 	})
 
 	e.Logger.Fatal(e.Start(":" + port))

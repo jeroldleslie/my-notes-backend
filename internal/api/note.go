@@ -19,6 +19,7 @@ type Note struct {
 	RemindUntil time.Time `json:"remind_until"`
 	Image       string    `sql:"image" json:"image" form:"image"`
 	UserID      int64     `sql:"user_id" json:"user_id"`
+	ImageID     int64     `sql:"-" json:"image_id"`
 }
 
 func (c *Note) MarshalJSON() ([]byte, error) {
@@ -69,8 +70,12 @@ func (m *DBMapper) SaveNote(note *Note) (*Note, error) {
 }
 
 func (m *DBMapper) GetUserNotes(userID int) (*[]Note, error) {
+	/* select *, f.id as image_id from notes n left join files f on f.note_id=n.id; */
 	notes := &[]Note{}
 	err := m.DB.Model(notes).
+		Column("note.*").
+		ColumnExpr("f.id as image_id").
+		Join("LEFT JOIN files as f").JoinOn("note.id=f.note_id").
 		Where("user_id = ?", userID).Select()
 	if err != nil {
 		if err == pg.ErrNoRows {
@@ -82,8 +87,15 @@ func (m *DBMapper) GetUserNotes(userID int) (*[]Note, error) {
 }
 
 func (m *DBMapper) DeleteNotes(id int) error {
+
+	fileMod := m.DB.Model((*File)(nil))
+	fileMod = fileMod.Where("note_id = ?", id)
+	_, ferr := fileMod.Delete()
+	if ferr != nil {
+		return ferr
+	}
+
 	mod := m.DB.Model((*Note)(nil))
-	//mod = mod. /*.Where("officers_id IS NULL")*/ Where("companies_id = ?", companyID)
 	mod = mod.Where("id = ?", id)
 	_, err := mod.Delete()
 
