@@ -31,6 +31,10 @@ func (api *API) CreateNote(note *Note) (*Note, error) {
 	return api.DBMapper.SaveNote(note)
 }
 
+func (api *API) UpdateNote(note *Note) (*Note, error) {
+	return api.DBMapper.UpdateNote(note)
+}
+
 func (api *API) GetUserNotes(userID int) (*[]Note, error) {
 	return api.DBMapper.GetUserNotes(userID)
 }

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
 	"strconv"
+	"strings"
 
 	"github.com/go-pg/pg/orm"
 	"github.com/jeroldleslie/my-notes-backend/internal/api"
@@ -77,6 +77,7 @@ func serve(a *APIHandler) {
 	g.POST("", a.handleCreateNote)
 	g.GET("/user_notes/:user_id", a.handleGetNote)
 	g.GET("/search", a.handleSearch)
+	g.PUT("/:id", a.handleUpdateNote)
 	g.DELETE("/:id", a.handleDeleteNote)
 	g.POST("/file", a.handleUpload)
 	g.GET("/file/:id", func(c echo.Context) error {
@@ -177,15 +178,6 @@ func (a *APIHandler) handleCreateNote(c echo.Context) error {
 		}
 		return response.Send(&c)
 	}
-
-	b, _ := json.Marshal(note)
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-
 	savedNote, errf := a.API.CreateNote(&note)
 
 	response := utils.Response{
@@ -209,6 +201,29 @@ func (a *APIHandler) handleGetNote(c echo.Context) error {
 	return response.Send(&c)
 }
 
+func (a *APIHandler) handleUpdateNote(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	note := api.Note{}
+	err := c.Bind(&note)
+	if err != nil {
+		response := utils.Response{
+			StatusCode: errorToHTTPStatusCode(err),
+			Data:       nil,
+			Error:      err,
+		}
+		return response.Send(&c)
+	}
+	note.ID = int64(id)
+	savedNote, errf := a.API.UpdateNote(&note)
+
+	response := utils.Response{
+		StatusCode: errorToHTTPStatusCode(errf),
+		Data:       savedNote,
+		Error:      errf,
+	}
+
+	return response.Send(&c)
+}
 func (a *APIHandler) handleDeleteNote(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id"))
 	deleteResponse := "{\"status\":\"SUCCESS\"}"
@@ -269,21 +284,30 @@ func (a *APIHandler) handleUpload(c echo.Context) error {
 
 func (a *APIHandler) handleSearch(c echo.Context) error {
 	searchText := c.QueryParam("text")
+	priority := c.QueryParam("priority")
 	userID := c.QueryParam("user_id")
 
 	notes := &[]api.Note{}
 
-	err := a.API.DBMapper.DB.Model(notes).
+	mod := a.API.DBMapper.DB.Model(notes).
 		Column("note.*").
 		ColumnExpr("f.id as image_id").
 		Join("LEFT JOIN files as f").JoinOn("note.id=f.note_id").
-		Where("note.user_id = ?", userID).
-		WhereGroup(func(q *orm.Query) (*orm.Query, error) {
-			q = q.Where("note.content ILIKE ?", "%"+searchText+"%").
-				WhereOr("note.title ILIKE ?", "%"+searchText+"%")
-			return q, nil
-		}).
-		Select()
+		Where("note.user_id = ?", userID)
+
+	if strings.TrimSpace(searchText) != "" {
+		mod = mod.
+			WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+				q = q.Where("note.content ILIKE ?", "%"+searchText+"%").
+					WhereOr("note.title ILIKE ?", "%"+searchText+"%")
+				return q, nil
+			})
+	}
+
+	if strings.TrimSpace(priority) != "" && priority != "NONE" {
+		mod = mod.Where("note.priority = ?", priority)
+	}
+	err := mod.Order("note.created_at DESC").Select()
 	response := utils.Response{
 		StatusCode: errorToHTTPStatusCode(err),
 		Data:       notes,

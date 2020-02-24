@@ -20,6 +20,7 @@ type Note struct {
 	Image       string    `sql:"image" json:"image" form:"image"`
 	UserID      int64     `sql:"user_id" json:"user_id"`
 	ImageID     int64     `sql:"-" json:"image_id"`
+	Color       string    `sql:"color" json:"color"`
 }
 
 func (c *Note) MarshalJSON() ([]byte, error) {
@@ -69,6 +70,15 @@ func (m *DBMapper) SaveNote(note *Note) (*Note, error) {
 
 }
 
+func (m *DBMapper) UpdateNote(note *Note) (*Note, error) {
+	now := time.Now().UTC()
+	note.UpdatedAt = now
+	if err := m.DB.Update(note); err != nil {
+		return nil, errors.Wrapf(err, "couldn't update note %+v", note)
+	}
+	return note, nil
+}
+
 func (m *DBMapper) GetUserNotes(userID int) (*[]Note, error) {
 	/* select *, f.id as image_id from notes n left join files f on f.note_id=n.id; */
 	notes := &[]Note{}
@@ -76,7 +86,9 @@ func (m *DBMapper) GetUserNotes(userID int) (*[]Note, error) {
 		Column("note.*").
 		ColumnExpr("f.id as image_id").
 		Join("LEFT JOIN files as f").JoinOn("note.id=f.note_id").
-		Where("user_id = ?", userID).Select()
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Select()
 	if err != nil {
 		if err == pg.ErrNoRows {
 			return notes, nil
