@@ -7,15 +7,12 @@ import (
 	"io"
 	"net/http"
 
-	//"os"
 	"strconv"
 
+	"github.com/go-pg/pg/orm"
 	"github.com/jeroldleslie/my-notes-backend/internal/api"
-	//"github.com/jeroldleslie/my-notes-backend/internal/log_conf"
 	"github.com/jeroldleslie/my-notes-backend/internal/utils"
 
-	//"github.com/jeroldleslie/my-notes-backend/internal/utils/db_logger"
-	//"github.com/jeroldleslie/my-notes-backend/internal/utils/stage"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/sirupsen/logrus"
@@ -79,6 +76,7 @@ func serve(a *APIHandler) {
 
 	g.POST("", a.handleCreateNote)
 	g.GET("/user_notes/:user_id", a.handleGetNote)
+	g.GET("/search", a.handleSearch)
 	g.DELETE("/:id", a.handleDeleteNote)
 	g.POST("/file", a.handleUpload)
 	g.GET("/file/:id", func(c echo.Context) error {
@@ -266,6 +264,32 @@ func (a *APIHandler) handleUpload(c echo.Context) error {
 		Data:       noteID,
 		Error:      err,
 	}
+	return response.Send(&c)
+}
+
+func (a *APIHandler) handleSearch(c echo.Context) error {
+	searchText := c.QueryParam("text")
+	userID := c.QueryParam("user_id")
+
+	notes := &[]api.Note{}
+
+	err := a.API.DBMapper.DB.Model(notes).
+		Column("note.*").
+		ColumnExpr("f.id as image_id").
+		Join("LEFT JOIN files as f").JoinOn("note.id=f.note_id").
+		Where("note.user_id = ?", userID).
+		WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+			q = q.Where("note.content ILIKE ?", "%"+searchText+"%").
+				WhereOr("note.title ILIKE ?", "%"+searchText+"%")
+			return q, nil
+		}).
+		Select()
+	response := utils.Response{
+		StatusCode: errorToHTTPStatusCode(err),
+		Data:       notes,
+		Error:      err,
+	}
+
 	return response.Send(&c)
 }
 
