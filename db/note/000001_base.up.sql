@@ -23,9 +23,7 @@ WITH (
 	OIDS=FALSE
 ) ;
 
-
 -- DROP TABLE public.notes
-
 CREATE TABLE notes (
 	id bigserial NOT NULL,
 	title text NULL,

@@ -24,9 +24,6 @@ type LoginResponse struct {
 }
 
 func (m *DBMapper) Signin(cred *User) (*LoginResponse, error) {
-	fmt.Println("inside signin >>>>>>>>>>>>>>>>>>>>>>>>>>")
-
-	fmt.Println(cred.Email)
 	loginResponse := &LoginResponse{}
 	expiresAt := time.Now().Add(time.Minute * 100000).Unix()
 

@@ -67,7 +67,6 @@ func (m *DBMapper) SaveNote(note *Note) (*Note, error) {
 	}
 
 	return note, nil
-
 }
 
 func (m *DBMapper) UpdateNote(note *Note) (*Note, error) {
@@ -80,7 +79,6 @@ func (m *DBMapper) UpdateNote(note *Note) (*Note, error) {
 }
 
 func (m *DBMapper) GetUserNotes(userID int) (*[]Note, error) {
-	/* select *, f.id as image_id from notes n left join files f on f.note_id=n.id; */
 	notes := &[]Note{}
 	err := m.DB.Model(notes).
 		Column("note.*").

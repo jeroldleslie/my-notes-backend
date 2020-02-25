@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -135,14 +134,6 @@ func (a *APIHandler) handleSignin(c echo.Context) error {
 		return response.Send(&c)
 	}
 
-	b, _ := json.Marshal(cred)
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-	fmt.Println(string(b))
-
 	loginResponse, errf := a.API.Signin(&cred)
 
 	if errf != nil {
@@ -261,11 +252,6 @@ func (a *APIHandler) handleUpload(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	contentType := http.DetectContentType(bodyBuf.Bytes())
-	fmt.Println(contentType)
-	fmt.Println(file.Size)
-	fmt.Println(len(bodyBuf.Bytes()))
 
 	err = a.API.Upload(int64(noteID), file.Filename, bodyBuf)
 

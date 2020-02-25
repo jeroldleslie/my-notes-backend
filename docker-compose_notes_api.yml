@@ -5,7 +5,7 @@ services:
     image: postgres
     container_name: postgres_notes
     ports:
-      - 5433:5432/tcp
+      - 5432:5432/tcp
     volumes:
       - ./db/note/000001_base.up.sql:/docker-entrypoint-initdb.d/init_notes.sql
 
@@ -25,7 +25,6 @@ services:
       - 8000:8000
     depends_on:
       - postgres_notes
-    #  - redis
 
 volumes:
   cache:
