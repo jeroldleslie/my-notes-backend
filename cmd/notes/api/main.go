@@ -106,14 +106,11 @@ func ping(c echo.Context) error {
 }
 
 func (a *APIHandler) handleSignup(c echo.Context) error {
-	//data := "{ \"message\": \"hello angular I am from API. Hello leslie too\"}"
 
 	user := api.User{}
 	var userResult *api.User
 	err := c.Bind(&user)
 	if err == nil {
-		fmt.Println(">>>>>>")
-		fmt.Println(user.Password)
 		userResult, err = a.API.Signup(&user)
 	}
 
@@ -127,8 +124,6 @@ func (a *APIHandler) handleSignup(c echo.Context) error {
 }
 
 func (a *APIHandler) handleSignin(c echo.Context) error {
-	//data := "{ \"message\": \"hello angular I am from API. Hello leslie too\"}"
-
 	cred := api.User{}
 	err := c.Bind(&cred)
 	if err != nil {

@@ -1,25 +1,6 @@
 version: "3"
 services:
 
-  web:
-    image: nginx
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - ./nginx.conf.template:/etc/nginx/nginx.conf.template
-      - ./swagger:/var/www/html
-    environment:
-      - EXPOSED_DOMAIN_NAME=${EXPOSED_DOMAIN_NAME}
-    ports:
-      - 80:80
-      - 443:443
-    command: /bin/bash -c "apt-get update && apt-get install openssl && envsubst < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && ENCODED_PASS=`echo ${API_WEB_HTTP_BASIC_AUTH_PASSWORD} | openssl passwd  -stdin` && echo ${API_WEB_HTTP_BASIC_AUTH_USER}:$${ENCODED_PASS} > /etc/nginx/htpasswd && exec nginx -g 'daemon off;'"
-    depends_on:
-      - redis
-      - notes_api
-
-  redis:
-    image: redis
-
   postgres_notes:
     image: postgres
     container_name: postgres_notes
@@ -38,11 +19,10 @@ services:
     volumes:
       - cache:/go
     environment:
-      - POSTGRESQL_ADDRESS=${POSTGRESQL_ADDRESS_NOTES}
-      - REDIS_ADDRESS=redis:6379
+      - POSTGRESQL_ADDRESS=${POSTGRESQL_ADDRESS}
       - STAGE=${STAGE}
     ports:
-      - 8000:8000/tcp
+      - 8000:8000
     depends_on:
       - postgres_notes
     #  - redis
