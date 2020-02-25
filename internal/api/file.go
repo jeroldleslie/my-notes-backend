@@ -9,9 +9,9 @@ import (
 )
 
 type File struct {
-	ID       int64  `json:"id"`
-	FileName string `sql:"file_name" json:"file_name"`
-	Content  []byte `sql:"content" json:"content"`
+	ID          int64     `json:"id"`
+	FileName    string    `sql:"file_name" json:"file_name"`
+	Content     []byte    `sql:"content" json:"content"`
 	ContentType string    `sql:"content_type" json:"content_type"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
@@ -30,7 +30,7 @@ func (m *DBMapper) SaveFile(noteID int64, fileName string, buffer *bytes.Buffer)
 		file.ContentType = http.DetectContentType(buffer.Bytes())
 		if uErr := m.DB.Update(file); uErr != nil {
 			return errors.Wrapf(uErr, "couldn't update file")
-		}Î
+		}
 	} else {
 		now := time.Now().UTC()
 		file.CreatedAt = now
